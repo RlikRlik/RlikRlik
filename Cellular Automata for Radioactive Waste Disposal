@@ -1,0 +1,168 @@
+#This section imports the required need to get what the name is
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib import colors
+import random
+
+#Prints the statement within the quotation marks.
+print("=== Cellular Automata for Radioactive Waste Disposal ===")
+
+# *** User Inputs ***
+
+#This segment is where the user imports variables for the code.
+
+L = 20.0 #This is the size of the area in KM
+numCells = 100 #This is the size of the array
+totalTime = 40 * 12 #This is the number of time steps in months and years.
+print_every_n_steps = 60 #This programmes python to print the scenario every (user input)
+verbosity = 0 #This is a switch controlling sections of code.
+
+# *** Model Developement 3 ***
+    
+#This segment loads the permeability data which assigns data stored to each cell within the array.
+#The data has been provided in the form of a txt file which has then been loaded in as K.
+#The max K value has been stored as Kmax, which will be used later in the code when calculating probability.
+
+Kmax = 3.5
+
+#np.loadtext() uses the filepath leading to the location where perm file is located.
+
+K = np.loadtxt("/Users/colin/Downloads/perm(1).txt", dtype='f', delimiter='\t')
+
+# *** Beginning of All Calculations ***
+
+#This is where the location of the city is stated and defined, the source contamination is also stated.
+
+city_x = 12
+city_y = 16
+cell_city_x = int(numCells * (city_x / L))
+cell_city_y = int(numCells * (city_y / L))
+
+source_x = 0.2
+source_y = 0.2
+cell_source_x = int(numCells * (source_x / L)) 
+cell_source_y = int(numCells * (source_y / L)) 
+ 
+C = np.zeros((numCells, numCells))
+C[cell_source_x, cell_source_y] = 1 #This makes the cell contaminated.
+
+#This is a variable that will be used later in time.
+count = 0
+
+for n in range(0, 1):
+ C = np.zeros((numCells ,numCells ))
+
+ C[cell_source_x, cell_source_y] = 1;
+ iteration = str(n+1)
+ print("Iteration:" + iteration)
+
+#This part allows the code to run through every month allowing for probability calculations to be completed.
+#Once the time step has been printed the code proceeds to go through every cell.
+
+for t in range(0, totalTime): #This loops from the starting point 0 to the total months inputted.
+#This inputs a random number for each step.
+    random_number = random.uniform(0, 1)
+
+#This prints a time step to the console
+    print("Time: " + str(t))
+    
+#This iterates through each row i (y-axis) 
+    for i in range(0, numCells):
+#This iterates through each column j (x-axis) 
+        for j in range(0, numCells):
+
+# *** Model Development 1 ***
+    
+#This segment counts each neighbour cell around the target cell and checks
+#to see if they are contaminated or not, the code will store each cells variables
+#and update the variable Sji, this will keep count of the number of contaminated cells.
+#Once all cells have been counted the code carries on to the next section
+
+            if C[i][j] == 0:
+                if verbosity > 0:
+                    print("Cell " + str(i) + " , " + str(j))
+                if i == 0 and j == 0:
+                    Sij = C[0][1] + C[1][0] + C[1][1]
+                elif (i == numCells - 1 and j == 0):
+                    Sij = C[numCells - 1][0] + C[numCells - 1][1] + C[numCells - 2][1]
+                elif (i == numCells - 1 and j == numCells - 1):
+                    Sij = C[numCells - 2][numCells - 1] + C[numCells - 1][numCells - 2] + C[numCells - 2][numCells - 2]
+                elif (i == 0 and j == numCells - 1):
+                    Sij = C[0][numCells - 1] + C[0][numCells - 2] + C[1][numCells - 2]
+                elif (i == 0):
+                    Sij = C[0][j - 1] + C[0][j + 1] + C[1][j - 1] + C[1][j + 1] + C[1][j]
+                elif (j == 0):
+                    Sij = C[i - 1][0] + C[i + 1][0] + C[i - 1][1] + C[i + 1][1] + C[i][1]
+                elif (i == numCells - 1):
+                    Sij = C[numCells - 1][j - 1] + C[numCells - 1][j + 1] + C[numCells - 2][j - 1] + C[numCells - 2][j + 1] + C[numCells - 2][j]
+                elif (j == numCells - 1):
+                    Sij = C[i - 1][numCells - 1] + C[i + 1][numCells - 1] + C[i - 1][numCells - 2] + C[i + 1][numCells - 2] + C[i][numCells - 2]
+                # Center
+                else:
+                    Sij = C[i][j] + C[i][j+1] + C[i][j-1] + C[i+1][j] + C[i-1][j] +C[i-1][j-1] + C[i-1][j+1] + C[i+1][j-1] + C[i+1][j+1]
+ 
+    
+# *** Model Development 2 ***
+
+#This is where the variable of the uncontaminated cell is
+#determined using the code written below. This is the probability equation, 
+#taking Sij, and Kij, of the cell into cxonsideration. If the probability 
+#is greater than a random number the cell becomes contaminated,
+#if not the state remains unchaged and the code contintinues cycling. 
+    
+                n = random.uniform(0.0, 1.0)
+                Prob = (0.125 * ((K[i][j] / Kmax) * Sij))
+                if (Prob > n):
+                    C[i][j] = 1.0
+                else:
+                    C[i][j] = C[i][j]
+
+#This is where the code checks if the city has become contaminated and prints
+#each step. If the city is contaminated the user is informed 
+#and the contamination is counted. This can be used to check how many months
+#the city has been contaminated for.
+
+#This counts the contaminated cells
+            Sij = 0
+    city = C[cell_city_x][cell_city_y]
+    if city == 1:
+        print("City Contaminated")
+        count += 1
+    else:
+        print("City Uncontaminated")
+    print(count)
+
+#This section plots the spread of the contaminated waste and saves a .png file of the plot.
+#The amount of plots is determined by the variable print_every_n_steps.
+
+
+#Plot cellular automata and save.
+    if t % print_every_n_steps == 0:
+        cmap = mpl.cm.jet
+        norm = mpl.colors.Normalize(vmin=0, vmax=1)
+        fig, ax = plt.subplots()
+        ax.imshow(C, cmap=cmap, norm=norm)
+        ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=2)
+        ax.axes.get_xaxis().set_visible(False)
+        ax.axes.get_yaxis().set_visible(False)
+        plt.savefig("solution_time" + str(t) + ".png")
+        plt.close
+
+#This section plots the permeability of the array and saves a .png file of the plot.
+
+cmap = mpl.cm.jet
+norm = mpl.colors.Normalize(vmin=0, vmax=1)
+fig, ax = plt.subplots()
+ax.imshow(K, cmap=cmap, norm=norm)
+ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=2)
+ax.axes.get_xaxis().set_visible(False)
+ax.axes.get_yaxis().set_visible(False)
+plt.savefig("K.png")
+plt.close
+
+if (count > 0):
+    print("=== End of code the city became contaminated ===")
+        
+else:
+    print("=== End of code the city was not contaminated ===")
